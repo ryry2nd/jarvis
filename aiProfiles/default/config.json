@@ -1,0 +1,11 @@
+{
+    "model": "ggml-gpt4all-j-v1.3-groovy.bin",
+    "name": "computer",
+    "debug": true,
+    "model_n_ctx": 1000,
+    "model_n_batch": 8,
+    "n_ctx": 2048,
+    "n_threads": 8,
+    "target_source_chunks": 4,
+    "collect_from_default": false
+}
