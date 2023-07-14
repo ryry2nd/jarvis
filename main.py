@@ -7,7 +7,7 @@ from selenium.webdriver.common.by import By
 from selenium.webdriver.common.keys import Keys
 from selenium import webdriver
 from rake_nltk import Rake
-from constants import PORT
+from constants import IP, PORT
 import speech_recognition as sr
 import pyttsx3, socket, pickle, time, random, vlc
 
@@ -60,7 +60,7 @@ def getElementWithText(e):
 def main():
     s = socket.socket()
 
-    s.connect(('127.0.0.1', PORT))
+    s.connect((IP, PORT))
 
     s.send("jarvis".encode())
 
