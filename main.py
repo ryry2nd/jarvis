@@ -1,20 +1,10 @@
-from rake_nltk import Rake
 from langchain.embeddings import HuggingFaceEmbeddings
 from langchain.vectorstores import Chroma
 from langchain.chains import RetrievalQA
 from langchain.llms import GPT4All
 from chromadb.config import Settings
 from constants import EMBEDDINGS_MODEL_NAME, PORT
-import speech_recognition as sr
-import pyttsx3, json, os, socket
-
-r = sr.Recognizer()
-voice = pyttsx3.init()
-keyword = Rake()
-
-wake_word = None
-qa = None
-show_sources = None
+import json, os, socket, threading
 
 def load(profile='default'):
     global wake_word, qa, show_sources
@@ -41,19 +31,32 @@ def load(profile='default'):
 
     qa = RetrievalQA.from_chain_type(llm=llm, chain_type="stuff", retriever=retriever, return_source_documents=show_sources)
 
+    return (wake_word, qa, show_sources)
+
+def client(c: socket.socket):
+    wake_word, qa, show_sources = load(c.recv(1024).decode())
+    c.send((wake_word, show_sources))
+    while True:
+        res = qa(c.recv(1024).decode())
+        answer = res['result']
+        c.send(answer.encode())
+        
+        if show_sources:
+            docs = res['source_documents']
+            c.send(docs.encode())
+
 def main():
-    #load("jarvis")
     s = socket.socket()
     s.bind(('', PORT))
     s.listen(5)
 
+    threads = []
+
     while True:
         c , addr = s.accept()
         
-        c.send('test'.encode())
-
-        c.close()
-    
+        threads.append(threading.Thread(target=client, args=(c,)))
+        threads[-1].start()
 
 if __name__ == '__main__':
     main()
