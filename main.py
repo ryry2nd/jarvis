@@ -122,8 +122,8 @@ def main():
                         answer = ' '.join(queryList[getWordIndex(queryList, "say")+1:])
                     elif isKeyword("fart") or isKeyword("farts"):
                         fart = random.choice(os.listdir("fart_noise_library"))
-                        f = vlc.MediaPlayer(os.path.join(os.path.abspath("fart_noise_library"), fart))
-                        f.audio_set_volume(100)
+                        dir = "fart_noise_library/" + fart
+                        f = vlc.MediaPlayer(dir)
                         f.play()
                     elif isKeyword("restart") or isKeyword("reboot"):
                         driver.quit()

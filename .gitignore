@@ -159,7 +159,11 @@ cython_debug/
 #  option (not recommended) you can uncomment the following to ignore the entire idea folder.
 #.idea/
 
+.vscode/
 aiProfiles/racist/
 aiProfiles/stupid/
 models/
 source_documents/
+fart_noise_library/
+aiProfiles/default/db/
+aiProfiles/jarvis/db/

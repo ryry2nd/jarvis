@@ -110,12 +110,8 @@ def main():
         texts = process_documents(source_directory, [metadata['source'] for metadata in collection['metadatas']])
         
         if collect_default:
-            def_persist_directory = os.path.join("aiProfiles", "default", "db")
             def_source_directory = os.path.join("aiProfiles", "default", "source_documents")
-            defSettings = Settings(chroma_db_impl='duckdb+parquet', persist_directory=def_persist_directory, anonymized_telemetry=False)
-            defdb = Chroma(persist_directory=def_persist_directory, embedding_function=embeddings, client_settings=defSettings)
-            dCollection = defdb.get()
-            dTexts = process_documents(def_source_directory, [metadata['source'] for metadata in dCollection['metadatas']])
+            dTexts = process_documents(def_source_directory, [metadata['source'] for metadata in collection['metadatas']])
             db.add_documents(dTexts)
         print(f"Creating embeddings. May take some minutes...")
         db.add_documents(texts)
