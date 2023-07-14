@@ -4,10 +4,9 @@ from langchain.chains import RetrievalQA
 from langchain.llms import GPT4All
 from chromadb.config import Settings
 from constants import EMBEDDINGS_MODEL_NAME, PORT
-import json, os, socket, threading
+import json, os, socket, threading, pickle
 
 def load(profile='default'):
-    global wake_word, qa, show_sources
     dir = os.path.join("aiProfiles", profile)
     with open(os.path.join(dir, "config.json"), 'r') as f:
         config = json.load(f)
@@ -34,16 +33,24 @@ def load(profile='default'):
     return (wake_word, qa, show_sources)
 
 def client(c: socket.socket):
-    wake_word, qa, show_sources = load(c.recv(1024).decode())
-    c.send((wake_word, show_sources))
-    while True:
-        res = qa(c.recv(1024).decode())
-        answer = res['result']
-        c.send(answer.encode())
-        
-        if show_sources:
-            docs = res['source_documents']
-            c.send(docs.encode())
+    try:
+        wake_word, qa, show_sources = load(c.recv(1024).decode())
+        c.sendall(pickle.dumps((wake_word, show_sources)))
+        while True:
+            res = qa(c.recv(1024).decode())
+            answer = res['result']
+            c.send(answer.encode())
+            
+            if show_sources:
+                docs = res['source_documents']
+                c.send(docs.encode())
+    except ConnectionResetError:
+        pass
+    except ConnectionAbortedError:
+        pass
+    except Exception as e:
+        print(e)
+    c.close()
 
 def main():
     s = socket.socket()
@@ -51,6 +58,7 @@ def main():
     s.listen(5)
 
     threads = []
+    print("server started")
 
     while True:
         c , addr = s.accept()
