@@ -1,5 +1,5 @@
 {
-    "model": "nous-hermes-13b.ggmlv3.q4_0.bin",
+    "model": "wizardlm-13b-v1.1-superhot-8k.ggmlv3.q4_0.bin",
     "name": "computer",
     "debug": true,
     "model_n_ctx": 1000,
