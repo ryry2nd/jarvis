@@ -64,16 +64,17 @@ def main():
 
     s.send("jarvis".encode())
 
-    wake_word, show_sources = pickle.loads(s.recv(1024))
+    wake_word = s.recv(1024).decode()
 
     driver = webdriver.Chrome()
     driver.implicitly_wait(0.6)
 
     say(wake_word + " activated")
 
-    while True:
+    while True:#codes, 0=nothing, 1=q%a, 2=load, 3=list
+        s.send(pickle.dumps((0, )))
         preQuery = lowerCase(listen())
-
+        
         if preQuery != "":
             preQueryList = preQuery.split()
 
@@ -170,7 +171,8 @@ def main():
                                 say("this is serious, Yes or No")
                     elif isKeyword("profiles") and isKeyword("list"):
                         answer = "the list of profiles are: "
-                        answer += ', '.join(os.listdir("aiProfiles"))
+                        s.send(pickle.dumps((3, )))
+                        answer += s.recv(1024).decode()
                     elif isKeyword("switch") or isKeyword("profile") or isKeyword("profiles"):
                         mn = max(getWordIndex(queryList, "switch"), getWordIndex(queryList, "to"), getWordIndex(queryList, "the"))
                         if queryList[-1] == "profile":
@@ -179,20 +181,20 @@ def main():
                             mx = len(queryList)
                         
                         pro = '_'.join(queryList[mn+1:mx])
+                        
+                        s.send(pickle.dumps((2, pro)))
 
-                        if os.path.exists(os.path.join("aiProfiles", pro)):
-                            #load(pro)
+                        ret = s.recv(1024).decode()
+
+                        if ret:
+                            wake_word = ret
                             answer = "profile successfully switched to the " + pro + " profile"
                             answer += ", the wake word is now: " + wake_word
                         else:
                             answer = "profile " + pro + " does not exist"
                     else:
-                        s.send(query.encode())
-
+                        s.send(pickle.dumps((1, query)))
                         answer = s.recv(1024).decode()
-
-                        if show_sources:
-                            print(s.recv(1024).decode())
                 except Exception as e:
                     answer = e
                     print(e)
