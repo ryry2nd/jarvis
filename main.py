@@ -72,12 +72,10 @@ def main():
     say(wake_word + " activated")
 
     while True:#codes, 0=nothing, 1=q%a, 2=load, 3=list
+        s.send(pickle.dumps((0, )))
         preQuery = lowerCase(listen())
-        
-        if preQuery == "":
-            s.send(pickle.dumps((0, )))
-            s.recv(1024)
-        else:
+
+        if preQuery != "":
             preQueryList = preQuery.split()
 
             i = getWordIndex(preQueryList, wake_word)
