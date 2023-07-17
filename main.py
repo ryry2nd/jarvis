@@ -10,6 +10,7 @@ def load(profile='default'):
     dir = os.path.join("aiProfiles", profile)
     with open(os.path.join(dir, "config.json"), 'r') as f:
         config = json.load(f)
+        f.close()
 
     model_path = "models/" + config["model"]
     wake_word = config["name"]
@@ -35,15 +36,29 @@ def load(profile='default'):
 def client(c: socket.socket):
     try:
         wake_word, qa, show_sources = load(c.recv(1024).decode())
-        c.sendall(pickle.dumps((wake_word, show_sources)))
-        while True:
-            res = qa(c.recv(1024).decode())
-            answer = res['result']
-            c.send(answer.encode())
-            
-            if show_sources:
-                docs = res['source_documents']
-                c.send(docs.encode())
+        c.send(wake_word.encode())
+        while True:#codes, 0=nothing, 1=q%a, 2=load, 3=list
+            query = pickle.loads(c.recv(1024))
+            if query[0] == 0:
+                pass
+            elif query[0] == 1:
+                res = qa(query[1])
+                answer = res['result']
+                c.send(answer.encode())
+                
+                if show_sources:
+                    print(res['source_documents'])
+            elif query[0] == 2:
+                if os.path.exists(os.path.join("aiProfiles", query[1])):
+                    x = load(query[1])
+                    wake_word = x[0]
+                    qa = x[1]
+                    show_sources = x[2]
+                    c.send(wake_word.encode())
+                else:
+                    c.send("".encode())
+            elif query[0] == 3:
+                c.send((', '.join(os.listdir("aiProfiles"))).encode())
     except ConnectionResetError:
         pass
     except ConnectionAbortedError:
@@ -62,6 +77,7 @@ def main():
 
     while True:
         c , addr = s.accept()
+        c.settimeout(60)
         
         threads.append(threading.Thread(target=client, args=(c,)))
         threads[-1].start()

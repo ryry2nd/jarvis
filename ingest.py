@@ -86,9 +86,9 @@ def does_vectorstore_exist(persist_directory: str) -> bool:
                 return True
     return False
 
-def main():
+def load(profile="default"):
     # Create embeddings
-    dest = os.path.join("aiProfiles", parse())
+    dest = os.path.join("aiProfiles", profile)
     persist_directory = os.path.join(dest, "db")
     source_directory = os.path.join(dest, "source_documents")
     with open(os.path.join(dest, "config.json"), 'r') as f:
@@ -101,6 +101,9 @@ def main():
         anonymized_telemetry=False
     )
     embeddings = HuggingFaceEmbeddings(model_name=EMBEDDINGS_MODEL_NAME)
+
+    if collect_default:
+        load()
 
     if does_vectorstore_exist(persist_directory):
         # Update and store locally vectorstore
@@ -143,6 +146,9 @@ def parse():
     args = parser.parse_args()
     config = vars(args)
     return config.get("dest")
+
+def main():
+    load(parse())
 
 if __name__ == "__main__":
     main()
