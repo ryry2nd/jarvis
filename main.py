@@ -40,7 +40,7 @@ def client(c: socket.socket):
         while True:#codes, 0=nothing, 1=q%a, 2=load, 3=list
             query = pickle.loads(c.recv(1024))
             if query[0] == 0:
-                pass
+                c.send("".encode())
             elif query[0] == 1:
                 res = qa(query[1])
                 answer = res['result']
