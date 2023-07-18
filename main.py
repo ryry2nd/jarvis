@@ -63,6 +63,10 @@ def client(c: socket.socket):
         pass
     except ConnectionAbortedError:
         pass
+    except TimeoutError:
+        pass
+    except EOFError:
+        pass
     except Exception as e:
         print(e)
     c.close()
