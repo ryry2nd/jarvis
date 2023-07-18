@@ -133,16 +133,11 @@ def main():
                         i = getWordIndex(queryList, "play")
 
                         if len(queryList[i+1:]) != 0:
-                            driver.get("https://www.youtube.com")
-                            time.sleep(0.2)
-                            m = driver.find_element(By.XPATH, "//input[@id='search']")
-                            m.send_keys(' '.join(queryList[i+1:]))
-                            time.sleep(0.2)
-                            m.send_keys(Keys.ENTER)
-                            time.sleep(0.2)
+                            driver.get("https://www.youtube.com/results?search_query=" + '+'.join(queryList[i+1:]))
 
                             i = len(driver.find_elements(By.XPATH, "//div[@id='ad-badge']"))
                             m = driver.find_elements(By.XPATH, "//ytd-item-section-renderer[@class='style-scope ytd-section-list-renderer']")
+                            time.sleep(0.3)
                             m[i].click()
                             m[i].click()
                         else:
