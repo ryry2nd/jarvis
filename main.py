@@ -12,13 +12,17 @@ from langchain.vectorstores import Chroma
 from langchain.chains import RetrievalQA
 from langchain.llms import GPT4All
 from chromadb.config import Settings
-from constants import EMBEDDINGS_MODEL_NAME
+from constants import EMBEDDINGS_MODEL_NAME, MEDIA_QUALITIES
+from youtube_search import YoutubeSearch
 import speech_recognition as sr
-import pyttsx3, vlc, random, time, json
+import pyttsx3, vlc, random, time, json, yt_dlp
 
 r = sr.Recognizer()
 voice = pyttsx3.init()
 keyword = Rake()
+
+instance = vlc.Instance('--no-xlib -q > /dev/null 2>&1')
+player = instance.media_player_new()
 
 wake_word = None
 qa = None
@@ -48,6 +52,33 @@ def load(profile='default'):
     llm = GPT4All(model=model_path, n_threads=config["n_threads"], verbose=False, n_ctx=config["n_ctx"])
 
     qa = RetrievalQA.from_chain_type(llm=llm, chain_type="stuff", retriever=retriever, return_source_documents=show_sources)
+
+def generate_stream_url(URL):
+    ydl_opts = {"quiet":True }
+    with yt_dlp.YoutubeDL(ydl_opts) as ydl:
+        info = ydl.extract_info(URL, download=False)
+        url_list = []
+        counter = -1
+        for format in info['formats']:
+            video_format = format['format']
+            video_format_short = video_format[video_format.find("(")+1:video_format.find(")")] 
+            if (video_format[2]==" " or "audio only" in video_format) and not("DASH" in video_format) and not(counter > -1 and video_format_short == url_list[counter]['video_format']):
+                url_list.append({
+                        'stream_url':format['url'],
+                        'video_format':video_format_short
+                        })
+                counter +=1
+
+    break_out_flag = False
+    for index in range(2):
+        if break_out_flag:
+            break
+        for item in url_list:
+            if item['video_format'] == MEDIA_QUALITIES[2-index]:
+                url = item['stream_url']
+                break_out_flag = True
+                break
+    return url
 
 def say(text):
     voice.say(text)
@@ -100,7 +131,7 @@ def main():
 
     while True:
         preQuery = lowerCase(listen())
-
+        
         if preQuery != "":
             preQueryList = preQuery.split()
 
@@ -115,16 +146,15 @@ def main():
                     keyword.extract_keywords_from_text(query)
 
                     if isKeyword("stop") or isKeyword("pause") or isKeyword("continue"):
-                        driver.find_element(By.XPATH, "//html").send_keys(Keys.SPACE)
+                        player.pause()
                     elif isKeyword("spell"):
                         answer = '-'.join([*(' '.join(queryList[getWordIndex(queryList, "spell")+1:]))])
                     elif isKeyword("say"):
                         answer = ' '.join(queryList[getWordIndex(queryList, "say")+1:])
                     elif isKeyword("fart") or isKeyword("farts"):
-                        fart = random.choice(os.listdir("fart_noise_library"))
-                        dir = "fart_noise_library/" + fart
-                        f = vlc.MediaPlayer(dir)
-                        f.play()
+                        dir = "fart_noise_library/" + random.choice(os.listdir("fart_noise_library"))
+                        player.set_media(vlc.Media(dir))
+                        player.play()
                     elif isKeyword("restart") or isKeyword("reboot"):
                         driver.quit()
                         driver = webdriver.Chrome()
@@ -133,15 +163,11 @@ def main():
                         i = getWordIndex(queryList, "play")
 
                         if len(queryList[i+1:]) != 0:
-                            driver.get("https://www.youtube.com/results?search_query=" + '+'.join(queryList[i+1:]))
-
-                            i = len(driver.find_elements(By.XPATH, "//div[@id='ad-badge']"))
-                            m = driver.find_elements(By.XPATH, "//ytd-item-section-renderer[@class='style-scope ytd-section-list-renderer']")
-                            time.sleep(0.3)
-                            m[i].click()
-                            m[i].click()
+                            results = YoutubeSearch(' '.join(queryList[i+1:]), max_results=1).to_dict()
+                            player.set_media(instance.media_new(generate_stream_url("https://www.youtube.com/watch?v=" + results[0]['id'])))
+                            player.play()
                         else:
-                            driver.find_element(By.XPATH, "//html").send_keys(Keys.SPACE)
+                            player.pause()
                     elif isKeyword("google") or isKeyword("search"):
                         i = max(getWordIndex(queryList, "google"), getWordIndex(queryList, "search"))
                         if queryList[i+1] == "up": i+=1
